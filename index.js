@@ -43,6 +43,9 @@ app.get('/add/:a/:b',(req,res)=>{
     });
 });
 
+//URl -- > http://localhost:3000/add/2/5
+//output {"result":7}
+
 app.listen(PORT,()=>{
 console.log(`Server is currently running on http://localhost:${PORT}`);});
 
