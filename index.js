@@ -20,6 +20,7 @@ app.get('/hello', (req,res)=>{
         timestamp: new Date().toISOString()
     });
 });
+
 //url http://localhost:3000/hello
 //output {"name":"thanush","message":"Hello from your server","timestamp":"2026-03-26T17:37:47.460Z"}
 
@@ -137,6 +138,7 @@ app.get('/add/:a/:b',(req,res)=>{
 
 // module.exports = router;
 app.use('/users', userRoutes); 
+app.use('/auth',  require('./routes/auth'));
 
 
 app.listen(PORT,()=>{
