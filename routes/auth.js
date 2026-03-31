@@ -2,72 +2,74 @@ const express = require('express');
 const router = express.Router();
 const bcrypt  = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
+// const { PrismaClient } = require('@prisma/client');
 
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-const requireAuth = require('../middleware/auth');
+// const { Pool } = require('pg');
+// const { PrismaPg } = require('@prisma/adapter-pg');
+// const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// const adapter = new PrismaPg(pool);
+// const prisma = new PrismaClient({ adapter });
+const prisma = require('../lib/prisma');
 
 
-router.post('/register',async (req,res)=>{
-    const {name,email,password}=req.body;
-    if(!name||!email||!password)
-        return res.status(400).json({error:'All fields required'});
-    const hashed = await bcrypt.hash(password,10);
+const requireAuth = require('../middleware/requireAuth');
+const { registerSchema, loginSchema } = require('../schemas/auth.schema');
 
-    try{
-        const user = await prisma.user.create({
-            data:{name,email,password:hashed}
-        });
 
-        const {password:_,...safeUser} =user;
-        res.status(201).json(safeUser);
-    }catch (e) {
-  console.log("ERROR 👉", e);
+router.post('/register', async (req, res, next) => {
+  try {
+    const body = registerSchema.parse(req.body);
 
-  if (e.code === 'P2002') {
-    return res.status(400).json({ error: 'Email already registered' });
+    const hashed = await bcrypt.hash(body.password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        password: hashed
+      }
+    });
+
+    const { password: _, ...safeUser } = user;
+    res.status(201).json(safeUser);
+
+  } catch (e) {
+    next(e);
   }
-
-  res.status(500).json({ error: 'Internal server error' });
-}
 });
 
 
 
 //POST /auth/login
 
-router.post('/login',async(req,res)=>{
-    const {email,password} = req.body;
-    if(!email||!password)
-        return res.status(400).json({error:'Email and Password required'});
+router.post('/login', async (req, res, next) => {
+  try {
+    const body = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({where:{email}});
-    if(!user)
-        return res.status(401).json({error:"Invalid Credentials"});
+    const user = await prisma.user.findUnique({
+      where: { email: body.email }
+    });
 
-    const valid = await bcrypt.compare(password,user.password);
-    if(!valid)
-        return res.status(401).json({error:'Invalid credentials'});
+    if (!user)
+      return res.status(401).json({ error: "Invalid credentials" });
+
+    const valid = await bcrypt.compare(body.password, user.password);
+
+    if (!valid)
+      return res.status(401).json({ error: "Invalid credentials" });
 
     const token = jwt.sign(
-        {userId:user.id,email:user.email},
-        process.env.JWT_SECRET,
-        {expiresIn:'7d'}
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
-    res.json({token})
+    res.json({ token });
+
+  } catch (e) {
+    next(e);
+  }
 });
 
-router.get('/me',requireAuth,async(req,res)=>{
-    const user = await prisma.user.findUnique({
-        where:{id:req.user.userId},
-        select:{id:true,name:true,email:true,createdAt:true}
-    });
-    res.json(user);
-});
 
 module.exports = router;

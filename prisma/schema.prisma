@@ -6,21 +6,20 @@ datasource db {
   provider = "postgresql"
 }
 
-model User{
-   id        Int      @id @default(autoincrement())
+model User {
+  id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
-  password  String?
+  password  String
   createdAt DateTime @default(now())
-  tasks     Task[] 
+  tasks     Task[]
 }
 
-
 model Task {
-   id        Int      @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   title     String
   done      Boolean  @default(false)
   createdAt DateTime @default(now())
-  userId    Int      // foreign key
+  userId    Int
   user      User     @relation(fields: [userId], references: [id])
 }
