@@ -1,9 +1,9 @@
+console.log("DATABASE_URL FROM RUNTIME:");
+console.log(process.env.DATABASE_URL);
+
 const app = require('./app');
 
 const PORT = 4000;
-
-console.log("DATABASE_URL FROM RUNTIME:");
-console.log(process.env.DATABASE_URL);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
